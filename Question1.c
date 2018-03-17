@@ -22,3 +22,29 @@ pthread_mutex_t mtxData = PTHREAD_MUTEX_INITIALIZER; /* mutex lock for data buff
 
 void *writer(void* param);
 void *reader(void* param);
+
+int main(int argc, char *argv[]) 
+{
+	srand(time(NULL));
+	pthread_t thId[SIZE_BUFF];
+	int idx;
+	for (idx = 0; idx < SIZE_BUFF / 2; ++idx)
+	{
+	  if(pthread_create(&thId[idx], NULL, writer, NULL) != 0)
+	  {
+		fprintf(stderr, "Unable to create writer thread\n");
+		exit(1);
+	  }
+	  if(pthread_create(&thId[idx + SIZE_BUFF/2], NULL, reader, NULL) != 0)
+	  {
+		fprintf(stderr, "Unable to create reader thread\n");
+		exit(1);
+	  }
+	}
+	for (idx = 0; idx < SIZE_BUFF; ++idx)
+	{
+		pthread_join(thId[idx], NULL);	
+	}
+	fprintf(stdout, "Parent thread quitting\n");
+	return 0;
+}
