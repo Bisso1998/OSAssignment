@@ -48,3 +48,39 @@ int main(int argc, char *argv[])
 	fprintf(stdout, "Parent thread quitting\n");
 	return 0;
 }
+
+void *writer(void* param)
+{	
+	int r = rand() % 500;
+	//fprintf(stdout, "Sleep for %d\n", r);
+	usleep(r);
+	//fprintf(stdout, "Thread writer\n");
+	pthread_mutex_lock(&mtx);
+		while(resourceAccess > 0 || readerPriorityFlag == 1)
+			pthread_cond_wait(&prod_cond,&mtx);
+		--resourceAccess;
+	pthread_mutex_unlock(&mtx);
+	
+	// write data here	
+	unsigned int tid = (unsigned int)pthread_self();
+
+	pthread_mutex_lock(&mtxData);
+
+	if (front != rear)  // check if buffer is not full
+	{
+		int newVal = rand() % 300;
+		buffer[rear] = newVal; 
+		rear = (rear + 1) %  SIZE_BUFF; // set new position	
+		int readersCount = resourceAccess < 0 ? 0 : resourceAccess;
+		fprintf(stdout, "Data written by thread %u is %d with readers %d\n", tid, newVal, readersCount);
+	}
+
+	pthread_mutex_unlock(&mtxData);
+	
+	pthread_mutex_lock(&mtx);
+		++resourceAccess;
+		pthread_cond_broadcast(&cons_cond);
+		pthread_cond_broadcast(&prod_cond);
+	pthread_mutex_unlock(&mtx);
+
+}
