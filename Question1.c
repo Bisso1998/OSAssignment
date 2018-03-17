@@ -84,3 +84,45 @@ void *writer(void* param)
 	pthread_mutex_unlock(&mtx);
 
 }
+
+
+
+void *reader(void* param)
+{	
+	int r = rand()%(500);
+	//fprintf(stdout, "Sleep for %d\n", r);
+	usleep(r);
+	//fprintf(stdout, "Thread reader\n");
+	pthread_mutex_lock(&mtx);
+//		while(resourceAccess < 0)
+//			pthread_cond_wait(&mtx, &cons_cond);
+		
+		if(resourceAccess < 0) 
+		{
+			readerPriorityFlag = 1;
+		}
+		else
+		{
+			++resourceAccess;
+		}
+	pthread_mutex_unlock(&mtx);
+	
+	// read data here
+	pthread_mutex_lock(&mtxData);
+	if ((front + 1) % SIZE_BUFF != rear)
+	{
+		front = (front + 1) % SIZE_BUFF;
+		int val = buffer[front];
+		unsigned int tid = (unsigned int)pthread_self();
+		fprintf(stdout, "Data read by thread %u\n is %d readers %d\n", tid, val, resourceAccess);	
+	}
+		
+	pthread_mutex_unlock(&mtxData);		
+	pthread_mutex_lock(&mtx);
+		--resourceAccess;
+		readerPriorityFlag = 0;
+		pthread_cond_broadcast(&cons_cond);
+		pthread_cond_broadcast(&prod_cond);
+	pthread_mutex_unlock(&mtx);
+
+}
